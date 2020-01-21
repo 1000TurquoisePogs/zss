@@ -15,8 +15,6 @@
 #include <string.h>
 #include "json.h"
 
-extern char **environ;
-
 static bool isNumber(const char s[]) 
 { 
   int i;
@@ -65,7 +63,7 @@ static JsonObject *returnJsonObj(ShortLivedHeap *slh, char buf[]) {
   return envSettingsJsonObject;
 }
 
-static JsonObject *envVarsToObject(const char *prefix) {
+static JsonObject *envVarsToObject(const char *prefix, const char **environment) {
   int i=0;
   int j=0;
   char *foo;
@@ -79,10 +77,10 @@ static JsonObject *envVarsToObject(const char *prefix) {
     prefix="";
   }
 
-  while(environ[i] != NULL)
+  while(environment[i] != NULL)
   {
-    if(startsWith(prefix, environ[i])) {
-      splitEnvKeyValue(environ[i], array);
+    if(startsWith(prefix, environment[i])) {
+      splitEnvKeyValue(environment[i], array);
       if(array[1]!=NULL) {
         j++;
         foo = returnJSONRow(array[0], array[1]);
@@ -105,8 +103,8 @@ static JsonObject *envVarsToObject(const char *prefix) {
   return envSettings;
 }
 
-JsonObject *readEnvSettings(const char *prefix) {
-    return envVarsToObject(prefix);
+JsonObject *readEnvSettings(const char *prefix, const char **environment) {
+  return envVarsToObject(prefix, environment);
 }
 
 

@@ -90,6 +90,8 @@
 #endif
 char productVersion[40];
 
+extern char **environ;
+
 static JsonObject *MVD_SETTINGS = NULL;
 static int traceLevel = 0;
 
@@ -1050,7 +1052,7 @@ int main(int argc, char **argv){
     return invalid;
   } 
   ShortLivedHeap *slh = makeShortLivedHeap(0x40000, 0x40);
-  JsonObject *envSettings = readEnvSettings("ZWED");
+  JsonObject *envSettings = readEnvSettings("ZWED", environ);
   JsonObject *mvdSettings = readServerSettings(slh, serverConfigFile);
   
   if (mvdSettings) {
@@ -1099,7 +1101,7 @@ int main(int argc, char **argv){
       installAuthCheckService(server);
       installSecurityManagementServices(server);
       installOMVSService(server);
-      installServerStatusService(server, MVD_SETTINGS, productVersion);
+      installServerStatusService(server, MVD_SETTINGS, productVersion, environ);
 #endif
       installLoginService(server);
       installLogoutService(server);

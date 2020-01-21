@@ -53,7 +53,8 @@ typedef int EXSMFI(int *reqType, int *recType, int *subType,
                    int *dpRate, int *options, int *mvs, int *zaap, int *ziip);
 EXSMFI *smfFunc;
 
-void installServerStatusService(HttpServer *server, JsonObject *serverSettings, char* productVer) {
+void installServerStatusService(HttpServer *server, JsonObject *serverSettings,
+                                char* productVer, const char **environment) {
   HttpService *httpService = makeGeneratedService("Server_Status_Service", "/server/agent/**");
   httpService->authType = SERVICE_AUTH_NATIVE_WITH_SESSION_TOKEN;
   httpService->serviceFunction = &serveStatus;
@@ -63,6 +64,7 @@ void installServerStatusService(HttpServer *server, JsonObject *serverSettings, 
   if (context != NULL) {
     context->serverConfig = serverSettings;
     context->productVersion[sizeof(context->productVersion) - 1] = '\0';
+    context->environment = environment;
     strncpy(context->productVersion, productVer, sizeof(context->productVersion) - 1);
   }
   httpService->userPointer = context;
@@ -136,7 +138,6 @@ int respondWithLogLevels(HttpResponse *response, ServerAgentContext *context) {
 #endif
 int respondWithServerEnvironment(HttpResponse *response, ServerAgentContext *context) {
   /*Information about parameters for smf_unc: https://www.ibm.com/support/knowledgecenter/SSLTBW_2.1.0/com.ibm.zos.v2r1.erbb700/smfp.htm#smfp*/
-  extern char **environ;
   struct utsname unameRet;
   char hostnameBuffer[HOST_NAME_MAX];
   char *buffer;
@@ -200,7 +201,7 @@ int respondWithServerEnvironment(HttpResponse *response, ServerAgentContext *con
   jsonAddString(out, "hostname", hostnameBuffer);
   jsonAddString(out, "nodename", unameRet.nodename);
   jsonStartObject(out, "userEnvironment");
-  char *envVar = *environ;
+  char *envVar = *(context->environment);
   for (int i = 1; envVar; i++) {
     char *equalSign = strchr(envVar, '=');
     if (equalSign == NULL) {
@@ -216,7 +217,7 @@ int respondWithServerEnvironment(HttpResponse *response, ServerAgentContext *con
     name[nameLen] = '\0';
     jsonAddString(out, name, equalSign+1);
     safeFree(name, nameBufferLen);
-    envVar = *(environ+i);
+    envVar = *((context->environment)+i);
   }
   jsonEndObject(out);
   jsonAddInt(out, "demandPagingRate", demandPaging);
